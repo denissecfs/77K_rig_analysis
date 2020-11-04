@@ -1,0 +1,7 @@
+# Date: 20201103
+# Operator: DCC
+# Notes: MIT448-1 with 15 in/lb per nut. TFMC post testing
+# Tap_cm: 5.0
+# Sample: MIT448-1
+Tap [uV],Shunt [A],Supply [A],Time [S],Hall [T],Cernox [K]
+122.300000,0.290000,0.000000,0.026658,21.390374,247.544885

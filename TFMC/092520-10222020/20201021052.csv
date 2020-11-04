@@ -1,0 +1,7 @@
+# Date: 20201021
+# Operator: DCC
+# Notes: Flamingo 4. 15 in/lb on each nut
+# Tap_cm: 6.0
+# Sample: Flamingo 4
+Tap [uV],Shunt [A],Supply [A],Time [S],Hall [T],Cernox [K]
+60.700000,-0.050000,0.000000,0.027998,21.431373,249.174056

@@ -1,0 +1,7 @@
+# Date: 20201023
+# Operator: DCC
+# Notes: 248F-6. 15 in/lb
+# Tap_cm: 5.0
+# Sample: 248F-6
+Tap [uV],Shunt [A],Supply [A],Time [S],Hall [T],Cernox [K]
+13.000000,0.290000,0.000000,0.027435,21.436720,247.544885
