@@ -135,46 +135,93 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 	data_folder = input("Name of Data Folder")
 	data_date_batch = input("Date of Data Batch")
 	data_file_path = data_dir + "\\" + data_folder + "\\"+ data_date_batch + "\\" + shot_name + ".csv"
-	print(data_file_path)
+	#print(data_file_path)
 	# Extract the file header information into line strings
-	header_lines = 5
-	header_info = []
 
-	f = open(data_file_path)
-	for i in range(header_lines):
-		header_info.append(f.readline())
-		header_info[i] = header_info[i][2:-1]
-	f.close()
+	try:
+		header_lines = 11
+		header_info = []
 
-	# Extract relevant header values from the strings. Note that
-	# unless the user has specified the tap length on the command
-	# line the tap length from the file will be used
-	# (i.e. signaled by a value of tap_length<0)
+		f = open(data_file_path)
+		for i in range(header_lines):
+			header_info.append(f.readline())
+			header_info[i] = header_info[i][2:-1]
+		f.close()
 
-	shot_date = header_info[0].split()[1]
-	operator = header_info[1].split()[1:]
-	sample_name=''
-	for i in range(0,len(header_info[4].split()[1:])):
-		sample_name=sample_name+header_info[4].split()[1:][i]+' '
-	#sample_name = header_info[4].split()[1:][0]
-	#tap_length = float(header_info[3].split()[4])
-	tap_length = float(header_info[3].split()[1]) #<<if using new pyplate data
-	# Load the data from the data file using pandas
+		# Extract relevant header values from the strings. Note that
+		# unless the user has specified the tap length on the command
+		# line the tap length from the file will be used
+		# (i.e. signaled by a value of tap_length<0)
 
-	data = pd.read_csv(data_file_path, header=5)
-	#data = pd.read_csv(data_file_path, header=10) #<<if using new pyplate data
-	# Remove extraneous data columns
-	#data.drop(['DATE'], axis=1, inplace = True)
-	#data.drop(['TIME'], axis=1, inplace = True)
-	#data.drop(['Status'], axis=1, inplace = True)
+		shot_date = header_info[0].split()[1]
+		operator = header_info[1].split()[1:]
+		sample_name = ''
+		for i in range(0, len(header_info[4].split()[1:])):
+			sample_name = sample_name+header_info[4].split()[1:][i]+' '
+		#sample_name = header_info[4].split()[1:][0]
+		#tap_length = float(header_info[3].split()[4])
+		tap_length = float(header_info[3].split()[1])  # <<if using new pyplate data
+		# Load the data from the data file using pandas
 
-	# Preserve only data above a user-specified threshold (default: 10 A)
-	data_conditioned = (data[data["Shunt [A]"] > current_thresh])#<<if using new pyplate data
-	#data_conditioned = (data[data["Current [A]"] > current_thresh])
+		data = pd.read_csv(data_file_path, header=header_lines)
+		#data = pd.read_csv(data_file_path, header=10) #<<if using new pyplate data
+		# Remove extraneous data columns
+		#data.drop(['DATE'], axis=1, inplace = True)
+		#data.drop(['TIME'], axis=1, inplace = True)
+		#data.drop(['Status'], axis=1, inplace = True)
 
-	# Truncate data to calculate a user-specified baseline (default 10 A - 100 A)
-	baseline_conditioned = (data_conditioned[data_conditioned["Shunt [A]"] > baseline_min])
-	baseline_conditioned = (baseline_conditioned[baseline_conditioned["Shunt [A]"] < baseline_max])
+		# Preserve only data above a user-specified threshold (default: 10 A)
+		# <<if using new pyplate data
+		data_conditioned = (data[data["Shunt [A]"] > current_thresh])
+		#data_conditioned = (data[data["Current [A]"] > current_thresh])
+
+		# Truncate data to calculate a user-specified baseline (default 10 A - 100 A)
+		baseline_conditioned = (
+			data_conditioned[data_conditioned["Shunt [A]"] > baseline_min])
+		baseline_conditioned = (
+			baseline_conditioned[baseline_conditioned["Shunt [A]"] < baseline_max])
+	except KeyError:
+		header_lines = 5
+		header_info = []
+
+		f = open(data_file_path)
+		for i in range(header_lines):
+			header_info.append(f.readline())
+			header_info[i] = header_info[i][2:-1]
+		f.close()
+
+		# Extract relevant header values from the strings. Note that
+		# unless the user has specified the tap length on the command
+		# line the tap length from the file will be used
+		# (i.e. signaled by a value of tap_length<0)
+
+		shot_date = header_info[0].split()[1]
+		operator = header_info[1].split()[1:]
+		sample_name = ''
+		for i in range(0, len(header_info[4].split()[1:])):
+			sample_name = sample_name+header_info[4].split()[1:][i]+' '
+		#sample_name = header_info[4].split()[1:][0]
+		#tap_length = float(header_info[3].split()[4])
+		tap_length = float(header_info[3].split()[1])  # <<if using new pyplate data
+		# Load the data from the data file using pandas
+
+		data = pd.read_csv(data_file_path, header=header_lines)
+		#data = pd.read_csv(data_file_path, header=10) #<<if using new pyplate data
+		# Remove extraneous data columns
+		#data.drop(['DATE'], axis=1, inplace = True)
+		#data.drop(['TIME'], axis=1, inplace = True)
+		#data.drop(['Status'], axis=1, inplace = True)
+
+		# Preserve only data above a user-specified threshold (default: 10 A)
+		# <<if using new pyplate data
+		data_conditioned = (data[data["Shunt [A]"] > current_thresh])
+		#data_conditioned = (data[data["Current [A]"] > current_thresh])
+
+		# Truncate data to calculate a user-specified baseline (default 10 A - 100 A)
+		baseline_conditioned = (
+			data_conditioned[data_conditioned["Shunt [A]"] > baseline_min])
+		baseline_conditioned = (
+			baseline_conditioned[baseline_conditioned["Shunt [A]"] < baseline_max])
 
 	# If there is remaining data, process it
 	if not data_conditioned.empty:
@@ -239,6 +286,8 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 					'weight': 'normal',
 					'size': 15}
 			plt.rc('font', **font)
+            
+			plt.rcParams['figure.figsize'] = [9.5, 6]
 
 			plot_y_min = np.min(voltages)
 			plot_y_max = Vc * 2 + V_floor
@@ -252,7 +301,7 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 
 			ax.set_xlabel('Current (A)')
 			ax.set_ylabel('Voltage (uV)')
-			ax.set_title('Shot %s Ic fit' % shot_name)
+			ax.set_title('Shot %s I_c Fit' % shot_name)
 
 			plt.ylim(-3, 20)
 
@@ -260,12 +309,12 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 
 			# Add Tc value +/- error box to plot
 			props = dict(boxstyle='round', facecolor='white', alpha=0.5)
-			ax.text(0.10, 0.90, 'Sample: %s \n $I_c$ = %.2f +/- %.2f A \n n = %.2f +/- %.2f' % (
+			ax.text(0.10, 0.90, 'Sample: %s I_c = %.2f +/- %.2f A n = %.2f +/- %.2f' % (
 				sample_name, Ic, Ic_error, n, n_error), transform=ax.transAxes,
 					verticalalignment='top', horizontalalignment='left', bbox=props)
 
-			#plt.show()
-			plt.savefig(shot_name+"_re-fit.png")
+			plt.show()
+			#plt.savefig(shot_name+"_re-fit.png")
 
 
 	#************************ adding for plotting
@@ -345,8 +394,8 @@ def plot_data(shot_list, baseline_min, baseline_max, current_thresh, plot_result
 		worksht.write(row, col+3, Ic_error_array[j])
 		worksht.write(row, col+4, n_array[j])
 		worksht.write(row, col+5, n_error_array[j])
-		print("j = /n %d" % j)
-		print("shot %d" % shot_list[j])
+#		print("j = /n %d" % j)
+#		print("shot %d" % shot_list[j])
 		row += 1
 
 	workbk.close()
@@ -355,12 +404,12 @@ def plot_data(shot_list, baseline_min, baseline_max, current_thresh, plot_result
 	# Plot data for comparison
 	#font = {'family': 'sans-serif','weight': 'normal', 'size': 15}
 	#plt.rc('font', **font)
-	plot_y_min = np.min(Vminmax_array[:, 0]) - 3.
-	plot_y_max = np.max(Vminmax_array[:, 1]) + 2
-	plt.figure(n_shots+1)
-	plt.plot(Ic_array,Vc_array,'o')
-	plt.xlabel('Current [A]')
-	plt.ylabel('Voltage [uV]')
+#	plot_y_min = np.min(Vminmax_array[:, 0]) - 3.
+#	plot_y_max = np.max(Vminmax_array[:, 1]) + 2
+#	plt.figure(n_shots+1)
+#	plt.plot(Ic_array,Vc_array,'o')
+#	plt.xlabel('Current [A]')
+#	plt.ylabel('Voltage [uV]')
 #	plt.show()
 
 
