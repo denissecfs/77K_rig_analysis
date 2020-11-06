@@ -21,6 +21,7 @@ import pandas as pd
 import sys, os, argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import lmfit
 from lmfit import minimize, Parameters, Parameter, report_fit, Model
 import peakutils
 import csv as csv
@@ -29,31 +30,12 @@ import xlsxwriter
 import pdb # debugging tool
 
 
-def shotList():
-	date=raw_input("Input date in YYYYMMDD format \n")
-	options=raw_input("manual(m) or list(l) \n")
-	if options == "m":
-		shot_nums = raw_input("Input shot numbers (separated by spaces): \n")
-		shot_nums = shot_nums.split()
-	else:
-		start=raw_input("start shot \n")
-		stop=raw_input("stop shot \n")
-		shot_nums=[]
-		for i in range(int(start),int(stop)+1):
-			shot_nums.append(str(i))
-
-	shot_list=[]
-	for i in range(0,len(shot_nums)):
-		shot_list.append(date+"%03d" % (int(shot_nums[i]),)) # https://stackoverflow.com/questions/134934/display-number-with-leading-zeros
-	return shot_list
-
 ########
 # Main #
 ########
 
 
 def main(command_line=True):
-
 	# Set the top level SPARTA data directory path
 	# if not 'SPARTA_DATA'in os.environ:
 	# 	print "\nError! The SPARTA_DATA environmental variable must be set to use"
@@ -62,7 +44,6 @@ def main(command_line=True):
 	# 	return -42
 	# else:
 	# 	data_dir = os.environ['SPARTA_DATA']
-
 	# Set command line options
 	if command_line:
 		parser = argparse.ArgumentParser()
@@ -90,11 +71,8 @@ def main(command_line=True):
 				required=False,
 				type=float,
 				help='Set the range for baseline calculation [A] (Default: 10 - 100 A)')
-
 		args = parser.parse_args()
-
 		# Exract command line options
-
 		shot_number = args.shot[0]
 		tap_length = args.length[0] if args.length else -1.
 		current_thresh = args.thresh[0] if args.thresh else 10.
@@ -107,28 +85,35 @@ def main(command_line=True):
 		current_thresh = float
 		baseline_min = float
 		baseline_max = float
-		reel_id = float
-		#shot_number = int(raw_input("Input shot number:\n"))
-		#reel_id = str(raw_input("Input reel_id:\n"))
-		#shot_list = raw_input("Input shot list (separated by spaces): \n")
+		#reel_id = float #Unless tapestar data is being analyzed the next four lines should be commented out. 
+		#shot_number = int(input("Input shot number:\n"))
+		#reel_id = str(input("Input reel_id:\n"))
+		#shot_list = input("Input shot list (separated by spaces): \n")
 		shot_list=shotList()
 		current_thresh = 10.
 		baseline_min = 10
 		baseline_max = 100
-		plot_result = True# False
+		plot_result = True # False
 		use_calibration = False
+	return(shot_list, current_thresh, baseline_min, baseline_max, plot_result)
 
-	# Execute I-V curve
+def shotList():
+	date=input("Input date in YYYYMMDD format \n")
+	options=input("manual(m) or list(l) \n")
+	if options == "m":
+		shot_nums = input("Input shot numbers (separated by spaces): \n")
+		shot_nums = shot_nums.split()
+	else:
+		start=input("start shot \n")
+		stop=input("stop shot \n")
+		shot_nums=[]
+		for i in range(int(start),int(stop)+1):
+			shot_nums.append(str(i))
+	shot_list=[]
+	for i in range(0,len(shot_nums)):
+		shot_list.append(date+"%03d" % (int(shot_nums[i]),)) # https://stackoverflow.com/questions/134934/display-number-with-leading-zeros
+	return shot_list
 
-	plot_data(shot_list, baseline_min, baseline_max, current_thresh, plot_result)
-	#Ic,n = fit_data(shot_number,
-	#	baseline_min,
-	#	baseline_max,
-	#	current_thresh,
-	#	plot_result)
-	#get_tapestar(reel_id,
-	#	Ic,
-	#	use_calibration)
 
 #######################
 # Import and fit data #
@@ -136,11 +121,15 @@ def main(command_line=True):
 
 
 def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_result):
-
 	# Determine full path to the shot data file
 	shot_name = str(shot_number)
 	#data_dir = os.environ['SPARTA_DATA']
-	data_file_path = shot_name + ".csv"
+	data_dir = os.getcwd()
+	#print(data_dir)
+	data_folder = input("Name of Data Folder")
+	data_date_batch = input("Date of Data Batch")
+	data_file_path = data_dir + "\\" + data_folder + "\\"+ data_date_batch + "\\" + shot_name + ".csv"
+	#print(data_file_path)  
 	# Extract the file header information into line strings
 
 	header_lines = 10
@@ -165,12 +154,12 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 	#sample_name = header_info[4].split()[1:][0]
 	#tap_length = float(header_info[3].split()[4])
 	tap_length = float(header_info[3].split()[1]) #<<if using new pyplate data
-	print(tap_length)
+	#print(tap_length)
 
 	# Load the data from the data file using pandas
 
-	#data = pd.read_csv(data_file_path, header=5)
-	data = pd.read_csv(data_file_path, header=10) #<<if using new pyplate data
+	data = pd.read_csv(data_file_path, header=5)
+	#data = pd.read_csv(data_file_path, header=10) #<<if using new pyplate data
 
 
 	# Remove extraneous data columns
@@ -236,16 +225,16 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 		n_error = result.params['n'].stderr
 		########################################## adding for plotting
 		# Synthesize an I-V curve from the fit results
-
 		fit_xmin = np.min(currents)
 		fit_xmax = np.max(currents) * 1.05
-
-		Ic_fit_array = np.linspace(fit_xmin, fit_xmax, num='100', endpoint='true')
+		
+		
+		Ic_fit_array = np.linspace(fit_xmin, fit_xmax, num=100, endpoint='true')
 		V_fit_array = Vc * (Ic_fit_array / Ic) ** n + V_floor
 		Vc_array = np.full(100, (Vc + V_floor))
 
 		if plot_result:
-			print"##################plotting!!!############"
+			print("##################plotting!!!############")
 			font = {'family': 'sans-serif',
 					'weight': 'normal',
 					'size': 15}
@@ -283,7 +272,7 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 
 
 	else:
-		print "Empty dataframe!"
+		print("Empty dataframe!")
 	return [Ic ,n ,Ic_error ,n_error , currents, voltages, V_floor, Vc, sample_name]
 
 
@@ -292,9 +281,7 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 
 #def plot_data(currents, voltages, V_floor, n, Vc, Ic, plot_result, shot_name):
 def plot_data(shot_list, baseline_min, baseline_max, current_thresh, plot_result):
-
-	#shot_list = shot_list.split()
-	shot_list = map(int, shot_list)
+	shot_list = list(map(int, shot_list))
 	n_shots = int(len(shot_list))
 	Ic_array = [0]*n_shots
 	Ic_error_array = [0]*n_shots
@@ -357,8 +344,8 @@ def plot_data(shot_list, baseline_min, baseline_max, current_thresh, plot_result
 		worksht.write(row, col+3, Ic_error_array[j])
 		worksht.write(row, col+4, n_array[j])
 		worksht.write(row, col+5, n_error_array[j])
-		print "j = /n %d" % j
-		print "shot %d" % shot_list[j]
+		print("j = /n %d" % j)
+		print("shot %d" % shot_list[j])
 		row += 1
 
 	workbk.close()
@@ -380,32 +367,28 @@ def plot_data(shot_list, baseline_min, baseline_max, current_thresh, plot_result
 
 	## Output the results to the command line
 
-	#print "\n"
-	#print "************************   I-V fit results   ************************\n"
-	#print "Shot date   : %s" % shot_date
-	#print "Shot number : %d" % shot_number
-	#rint "Operator    : %s" % operator
-	#print "Sample      : %s" % sample_name
-	#print "Tap length  : %.2f cm" % tap_length
-	#print "I thresh.   : %.2f A" % current_thresh
-	#print ""
-	#print "Ic = %2.2f +/- %2.2f A" % (Ic,Ic_error)
-	#print " n = %2.2f +/- %2.2f" % (n,n_error)
-	#print "Vc = %2.2f uV" % Vc
-	#print "Vf = %2.2f uV" % V_floor
-	#print "Vt = %2.2f uV" % (Vc+V_floor)
-	#print ""
-	#print "*********************************************************************\n"
-
-
-
-
+	print( "\n")
+	print( "************************   I-V fit results   ************************\n")
+	print("Shot date   : %s" % shot_date)
+	print("Shot number : %d" % shot_number)
+	print( "Operator    : %s" % operator)
+	print("Sample      : %s" % sample_name)
+	print( "Tap length  : %.2f cm" % tap_length)
+	print( "I thresh.   : %.2f A" % current_thresh)
+	print( "")
+	print( "Ic = %2.2f +/- %2.2f A" % (Ic,Ic_error))
+	print( " n = %2.2f +/- %2.2f" % (n,n_error))
+	print( "Vc = %2.2f uV" % Vc)
+	print( "Vf = %2.2f uV" % V_floor)
+	print( "Vt = %2.2f uV" % (Vc+V_floor))
+	print( "")
+	print( "*********************************************************************\n")
 
 
 ######################
 # Read TAPESTAR data #
 ######################
-
+"""
 def get_tapestar(reel_id, Ic_meas, use_calibration):
 
 	# Set the file name for the user-selected TAPESTAR reel
@@ -417,7 +400,7 @@ def get_tapestar(reel_id, Ic_meas, use_calibration):
 	elif (reel_id == '2c'):
 		file_name = "SuperPower_K19191_April2018/2c_M3-1318-4 0104 1769-1829m.csv"
 	else:
-		print "\nError! Unrecognized HTS reel ID!\n"
+		print( "\nError! Unrecognized HTS reel ID!\n")
 		return
 
 	data_dir = os.environ['SPARTA_DATA']
@@ -461,7 +444,7 @@ def get_tapestar(reel_id, Ic_meas, use_calibration):
 		position_array.append(tape_end + i * 1./resolution_factor)
 
 	# Use the 1D interp function to populate the critical currents
-	print "position array = " + str(position_array)
+	print("position array = " + str(position_array))
 	tapestar_calibration = np.array([1.0000, 1.0895, 1.1022])
 	tapestar_index = 0
 	#pdb.set_trace()
@@ -472,10 +455,10 @@ def get_tapestar(reel_id, Ic_meas, use_calibration):
 	for position in position_array:
 		#try:
 		Ic_array.append(f(position) / tapestar_calibration[tapestar_index])
-		print "*****************************************"
-		print "NORMAL RUN OF FOR LOOP"
-		print "position=" + str(position)
-		print "f(position)=" + str(f(position))
+		print("*****************************************")
+		print ("NORMAL RUN OF FOR LOOP")
+		print ("position=" + str(position))
+		print ("f(position)=" + str(f(position)))
 		#except ValueError:
 		#	print "*****************************************"
 		#	print "ERROR"
@@ -491,17 +474,17 @@ def get_tapestar(reel_id, Ic_meas, use_calibration):
 	calibration_string = "No"
 	if use_calibration: calibration_string = "Yes"
 
-	print ""
-	print "************************   TAPESTAR results   ************************\n"
-	print "TAPESTAR Calibrated: %s" % (calibration_string)
-	print "Calibration factor : %0.4f" % (tapestar_calibration[tapestar_index])
-	print ""
-	print "Results for tape range %f to %f:" % (tape_end, tape_start)
-	print "Minimum Ic: %.1f A" % (Ic_min)
-	print "Maximum Ic: %.1f A" % (Ic_max)
-	print "Average Ic: %.1f +/- %.1f A (%.1f%%)" % (Ic_avg, Ic_std, (Ic_std/Ic_avg*100))
-	print ""
-	print "**********************************************************************\n"
+	#print ""
+	#print "************************   TAPESTAR results   ************************\n"
+	#print "TAPESTAR Calibrated: %s" % (calibration_string)
+	#print "Calibration factor : %0.4f" % (tapestar_calibration[tapestar_index])
+	#print ""
+	#print "Results for tape range %f to %f:" % (tape_end, tape_start)
+	#print "Minimum Ic: %.1f A" % (Ic_min)
+	#print "Maximum Ic: %.1f A" % (Ic_max)
+	#print "Average Ic: %.1f +/- %.1f A (%.1f%%)" % (Ic_avg, Ic_std, (Ic_std/Ic_avg*100))
+	#print ""
+	#print "**********************************************************************\n"
 
 	# Create x-axis as relative position along tape
 	position_plot = []
@@ -539,12 +522,25 @@ def get_tapestar(reel_id, Ic_meas, use_calibration):
 
 	f2.show()
 
-	raw_input()
+	input()
 
+"""
 
 ###############################
 # Create Python main function #
 ###############################
 
 if __name__ == "__main__":
-	main(command_line=False)
+	shot_list, current_thresh, baseline_min, baseline_max, plot_result = main(command_line=False) #these variables are only for FALSE
+    
+    
+
+#Execute I-V curve
+plot_data(shot_list, baseline_min, baseline_max, current_thresh, plot_result)
+
+
+#Ic,n = fit_data(shot_number,baseline_min,baseline_max, current_thresh, plot_result)
+#get_tapestar(reel_id, Ic,use_calibration)
+
+
+
