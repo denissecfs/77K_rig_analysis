@@ -222,6 +222,48 @@ def fit_data(shot_number, baseline_min, baseline_max, current_thresh, plot_resul
 			data_conditioned[data_conditioned["Shunt [A]"] > baseline_min])
 		baseline_conditioned = (
 			baseline_conditioned[baseline_conditioned["Shunt [A]"] < baseline_max])
+	except IndexError:
+		header_lines = 13
+		header_info = []
+
+		f = open(data_file_path)
+		for i in range(header_lines):
+			header_info.append(f.readline())
+			header_info[i] = header_info[i][2:-1]
+		f.close()
+
+		# Extract relevant header values from the strings. Note that
+		# unless the user has specified the tap length on the command
+		# line the tap length from the file will be used
+		# (i.e. signaled by a value of tap_length<0)
+
+		shot_date = header_info[0].split()[1]
+		operator = header_info[1].split()[1:]
+		sample_name = ''
+		for i in range(0, len(header_info[6].split()[1:])):
+			sample_name = sample_name+header_info[6].split()[1:][i]+' '
+		#sample_name = header_info[4].split()[1:][0]
+		#tap_length = float(header_info[3].split()[4])
+		tap_length = float(header_info[5].split()[1])  # <<if using new pyplate data
+		# Load the data from the data file using pandas
+
+		data = pd.read_csv(data_file_path, header=header_lines)
+		#data = pd.read_csv(data_file_path, header=10) #<<if using new pyplate data
+		# Remove extraneous data columns
+		#data.drop(['DATE'], axis=1, inplace = True)
+		#data.drop(['TIME'], axis=1, inplace = True)
+		#data.drop(['Status'], axis=1, inplace = True)
+
+		# Preserve only data above a user-specified threshold (default: 10 A)
+		# <<if using new pyplate data
+		data_conditioned = (data[data["Shunt [A]"] > current_thresh])
+		#data_conditioned = (data[data["Current [A]"] > current_thresh])
+
+		# Truncate data to calculate a user-specified baseline (default 10 A - 100 A)
+		baseline_conditioned = (
+			data_conditioned[data_conditioned["Shunt [A]"] > baseline_min])
+		baseline_conditioned = (
+			baseline_conditioned[baseline_conditioned["Shunt [A]"] < baseline_max])
 
 	# If there is remaining data, process it
 	if not data_conditioned.empty:
