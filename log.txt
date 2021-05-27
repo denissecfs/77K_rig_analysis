@@ -1,0 +1,16 @@
+Info: 11/17/2020 5:12:36 PM - ZDPUsage:post:Status code: 200
+Info: 11/17/2020 5:12:36 PM - ZDPUsage:post:Response:<!DOCTYPE HTML>
+<html lang="en-US">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="0;url=http://www.kiwiforgmail.com/privacy.php">
+        <script type="text/javascript">
+            window.location.href = "http://www.kiwiforgmail.com/privacy.php"
+        </script>
+        <title>Page Redirection</title>
+    </head>
+    <body>
+        If you are not redirected automatically, click here <a href='http://www.kiwiforgmail.com/privacy.php'>Privacy Policy</a>
+    </body>
+</html>
+
