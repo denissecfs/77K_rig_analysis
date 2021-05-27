@@ -1,8 +1,6 @@
 # Date: 20201002
 # Operator: DCC
-# Notes:
-#	
-#	Torque wrench used. 40 in/lb 
+# Notes:Torque wrench used. 40 in/lb 
 # Tap_cm: 5.0
 # Sample: MIT232-2
 Tap [uV],Shunt [A],Supply [A],Time [S],Hall [T],Cernox [K]
